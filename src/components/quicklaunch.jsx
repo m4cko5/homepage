@@ -188,11 +188,16 @@ export default function QuickLaunch({ servicesAndBookmarks, searchString, setSea
 
           if (searchSuggestions[1]) {
             newResults = newResults.concat(
-              searchSuggestions[1].map((suggestion) => ({
-                href: searchProvider.url + encodeURIComponent(suggestion),
-                name: suggestion,
-                type: "searchSuggestion",
-              })),
+              searchSuggestions[1].map((suggestion) => {
+                // Check if the suggestion is actually a URL
+                const isUrl = suggestion.startsWith('http://') || suggestion.startsWith('https://');
+                
+                return {
+                  href: isUrl ? suggestion : searchProvider.url + encodeURIComponent(suggestion),
+                  name: suggestion,
+                  type: isUrl ? "url" : "searchSuggestion",
+                };
+              }),
             );
           }
         }
