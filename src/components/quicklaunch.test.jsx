@@ -346,8 +346,8 @@ describe("components/quicklaunch", () => {
     });
 
     // Check that the URL suggestions have type "url"
-    const urlButtons = Array.from(document.querySelectorAll("button")).filter((btn) =>
-      btn.textContent?.includes("https://example.com") || btn.textContent?.includes("http://another.com"),
+    const urlButtons = Array.from(document.querySelectorAll("button")).filter(
+      (btn) => btn.textContent?.includes("https://example.com") || btn.textContent?.includes("http://another.com"),
     );
 
     expect(urlButtons.length).toBe(2);

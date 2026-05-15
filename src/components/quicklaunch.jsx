@@ -190,8 +190,9 @@ export default function QuickLaunch({ servicesAndBookmarks, searchString, setSea
             newResults = newResults.concat(
               searchSuggestions[1].map((suggestion) => {
                 // Check if the suggestion is actually a URL (if feature is enabled)
-                const isUrl = allowUrlSuggestions && (suggestion.startsWith('http://') || suggestion.startsWith('https://'));
-                
+                const isUrl =
+                  allowUrlSuggestions && (suggestion.startsWith("http://") || suggestion.startsWith("https://"));
+
                 return {
                   href: isUrl ? suggestion : searchProvider.url + encodeURIComponent(suggestion),
                   name: suggestion,
@@ -222,7 +223,16 @@ export default function QuickLaunch({ servicesAndBookmarks, searchString, setSea
       abortController.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchString, servicesAndBookmarks, searchDescriptions, hideVisitURL, allowUrlSuggestions, searchSuggestions, searchProvider, url]);
+  }, [
+    searchString,
+    servicesAndBookmarks,
+    searchDescriptions,
+    hideVisitURL,
+    allowUrlSuggestions,
+    searchSuggestions,
+    searchProvider,
+    url,
+  ]);
 
   const [hidden, setHidden] = useState(true);
   useEffect(() => {
