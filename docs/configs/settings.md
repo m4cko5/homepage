@@ -507,6 +507,7 @@ There are a few optional settings for the Quick Launch feature:
 - `searchDescriptions`: which lets you control whether item descriptions are included in searches. This is false by default. When enabled, results that match the item name will be placed above those that only match the description.
 - `hideInternetSearch`: disable automatically including the currently-selected web search (e.g. from the widget) as a Quick Launch option. This is false by default, enabling the feature.
 - `showSearchSuggestions`: show search suggestions for the internet search. If this is not specified then the setting will be inherited from the search widget. If it is not specified there either, it will default to false. For custom providers the `suggestionUrl` needs to be set in order for this to work.
+- `allowUrlSuggestions`: allow search suggestions that are URLs to be opened directly without being treated as search queries. This is true by default, enabling the feature.
 - `provider`: search engine provider. If none is specified it will try to use the provider set for the Search Widget, if neither are present then internet search will be disabled.
 - `hideVisitURL`: disable detecting and offering an option to open URLs. This is false by default, enabling the feature.
 - `mobileButtonPosition`: enables and sets the position of the mobile quicklaunch button. Options are `top-left`, `top-right`, `bottom-left`, `bottom-right`. This is empty by default, disabling the feature.
@@ -516,6 +517,7 @@ quicklaunch:
   searchDescriptions: true
   hideInternetSearch: true
   showSearchSuggestions: true
+  allowUrlSuggestions: true
   hideVisitURL: true
   provider: google # google, duckduckgo, bing, baidu, brave or custom
 ```

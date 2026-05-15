@@ -19,7 +19,7 @@ export default function QuickLaunch({ servicesAndBookmarks, searchString, setSea
   const { t } = useTranslation();
 
   const { settings } = useContext(SettingsContext);
-  const { searchDescriptions = false, hideVisitURL = false } = settings?.quicklaunch ?? {};
+  const { searchDescriptions = false, hideVisitURL = false, allowUrlSuggestions = true } = settings?.quicklaunch ?? {};
 
   const searchField = useRef();
 
