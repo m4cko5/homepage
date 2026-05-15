@@ -318,6 +318,86 @@ describe("components/quicklaunch", () => {
     fetch = originalFetch;
   });
 
+  it("treats URLs in search suggestions as direct URLs when allowUrlSuggestions is true (default)", async () => {
+    const originalFetch = globalThis.fetch;
+    const fetchSpy = vi.fn(async () => ({
+      json: async () => ["test", ["https://example.com", "http://another.com", "regular suggestion"]],
+    }));
+
+    fetch = fetchSpy;
+
+    renderWithProviders(<Wrapper />, {
+      settings: {
+        quicklaunch: {
+          provider: "duckduckgo",
+          showSearchSuggestions: true,
+          allowUrlSuggestions: true,
+        },
+      },
+    });
+
+    const input = screen.getByPlaceholderText("Search");
+    await waitFor(() => expect(input).toHaveFocus());
+
+    fireEvent.change(input, { target: { value: "test" } });
+
+    await waitFor(() => {
+      expect(screen.getAllByText("quicklaunch.searchsuggestion").length).toBeGreaterThan(0);
+    });
+
+    // Check that the URL suggestions have type "url"
+    const urlButtons = Array.from(document.querySelectorAll("button")).filter(
+      (btn) => btn.textContent?.includes("https://example.com") || btn.textContent?.includes("http://another.com"),
+    );
+
+    expect(urlButtons.length).toBe(2);
+    urlButtons.forEach((btn) => {
+      expect(btn.textContent).toContain("quicklaunch.url");
+    });
+
+    // The regular suggestion should still be a search suggestion
+    const regularButton = Array.from(document.querySelectorAll("button")).find((btn) =>
+      btn.textContent?.includes("regular suggestion"),
+    );
+    expect(regularButton?.textContent).toContain("quicklaunch.searchsuggestion");
+
+    fetch = originalFetch;
+  });
+
+  it("treats URLs in search suggestions as search queries when allowUrlSuggestions is false", async () => {
+    const originalFetch = globalThis.fetch;
+    const fetchSpy = vi.fn(async () => ({
+      json: async () => ["test", ["https://example.com", "http://another.com", "regular suggestion"]],
+    }));
+
+    fetch = fetchSpy;
+
+    renderWithProviders(<Wrapper />, {
+      settings: {
+        quicklaunch: {
+          provider: "duckduckgo",
+          showSearchSuggestions: true,
+          allowUrlSuggestions: false,
+        },
+      },
+    });
+
+    const input = screen.getByPlaceholderText("Search");
+    await waitFor(() => expect(input).toHaveFocus());
+
+    fireEvent.change(input, { target: { value: "test" } });
+
+    await waitFor(() => {
+      expect(screen.getAllByText("quicklaunch.searchsuggestion").length).toBeGreaterThan(0);
+    });
+
+    // All suggestions, including URLs, should be search suggestions when allowUrlSuggestions is false
+    const allSearchSuggestions = screen.getAllByText("quicklaunch.searchsuggestion");
+    expect(allSearchSuggestions.length).toBe(3);
+
+    fetch = originalFetch;
+  });
+
   it("uses the stored provider when the search widget provides a provider list", async () => {
     state.widgets = {
       w: {
