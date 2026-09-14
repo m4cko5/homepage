@@ -482,6 +482,46 @@ describe("components/quicklaunch", () => {
     openSpy.mockRestore();
   });
 
+  it("autocompletes a URL suggestion with ArrowRight", async () => {
+    const originalFetch = globalThis.fetch;
+    const fetchSpy = vi.fn(async () => ({
+      json: async () => ["test", ["https://example.com/path"]],
+    }));
+
+    fetch = fetchSpy;
+
+    renderWithProviders(<Wrapper />, {
+      settings: {
+        quicklaunch: {
+          provider: "duckduckgo",
+          showSearchSuggestions: true,
+          allowUrlSuggestions: true,
+        },
+      },
+    });
+
+    const input = screen.getByPlaceholderText("Search");
+    await waitFor(() => expect(input).toHaveFocus());
+
+    fireEvent.change(input, { target: { value: "test" } });
+
+    const urlSuggestion = await waitFor(() => {
+      const button = Array.from(document.querySelectorAll("button")).find((candidate) =>
+        candidate.textContent?.includes("https://example.com/path"),
+      );
+
+      expect(button).toBeTruthy();
+      return button;
+    });
+
+    fireEvent.mouseEnter(urlSuggestion);
+    fireEvent.keyDown(input, { key: "ArrowRight" });
+
+    expect(input).toHaveValue("https://example.com/path");
+
+    fetch = originalFetch;
+  });
+
   it("treats URLs in search suggestions as search queries when allowUrlSuggestions is false", async () => {
     const originalFetch = globalThis.fetch;
     const fetchSpy = vi.fn(async () => ({

@@ -172,7 +172,7 @@ export default function QuickLaunch({ servicesAndBookmarks, searchString, setSea
     } else if (
       event.key === "ArrowRight" &&
       results[activeItemIndex] &&
-      results[activeItemIndex].type === "searchSuggestion"
+      ["searchSuggestion", "url"].includes(results[activeItemIndex].type)
     ) {
       setCurrentItemIndex(null);
       setSearchString(results[activeItemIndex].name);
