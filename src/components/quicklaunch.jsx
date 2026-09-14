@@ -3,11 +3,10 @@ import { useTranslation } from "next-i18next/pages";
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { FiSearch } from "react-icons/fi";
 import useSWR from "swr";
+import { SettingsContext } from "utils/contexts/settings";
 
 import ResolvedIcon from "./resolvedicon";
 import { getStoredProvider, searchProviders } from "./widgets/search/search";
-
-import { SettingsContext } from "utils/contexts/settings";
 
 const MOBILE_BUTTON_POSITIONS = {
   "top-left": "top-4 left-4",
@@ -17,7 +16,7 @@ const MOBILE_BUTTON_POSITIONS = {
 };
 
 function parseUrl(searchString) {
-  if (!/.+[.:].+/.test(searchString)) return null; // basic test for probably a url
+  if (!/.+[.:].+/.test(searchString)) return null;
 
   try {
     return new URL(searchString.toLowerCase().startsWith("http") ? searchString : `https://${searchString}`);
@@ -27,6 +26,7 @@ function parseUrl(searchString) {
 }
 
 function getSearchResults({
+  allowUrlSuggestions,
   hideVisitURL,
   searchDescriptions,
   searchProvider,
@@ -43,6 +43,7 @@ function getSearchResults({
     const descriptionMatch = searchDescriptions && result.description?.toLowerCase().includes(searchString);
 
     if (!nameMatch && !descriptionMatch) return [];
+
     return [{ ...result, ...(searchDescriptions && { priority: nameMatch ? 2 : +descriptionMatch }) }];
   });
 
@@ -59,11 +60,16 @@ function getSearchResults({
 
     if (searchProvider.showSearchSuggestions && searchProvider.suggestionUrl && searchSuggestions[1]) {
       results.push(
-        ...searchSuggestions[1].map((suggestion) => ({
-          href: searchProvider.url + encodeURIComponent(suggestion),
-          name: suggestion,
-          type: "searchSuggestion",
-        })),
+        ...searchSuggestions[1].map((suggestion) => {
+          const isUrl =
+            allowUrlSuggestions && (suggestion.startsWith("http://") || suggestion.startsWith("https://"));
+
+          return {
+            href: isUrl ? suggestion : searchProvider.url + encodeURIComponent(suggestion),
+            name: suggestion,
+            type: isUrl ? "url" : "searchSuggestion",
+          };
+        }),
       );
     }
   }
@@ -83,7 +89,7 @@ export default function QuickLaunch({ servicesAndBookmarks, searchString, setSea
   const { t } = useTranslation();
 
   const { settings } = useContext(SettingsContext);
-  const { searchDescriptions = false, hideVisitURL = false } = settings?.quicklaunch ?? {};
+  const { searchDescriptions = false, hideVisitURL = false, allowUrlSuggestions = true } = settings?.quicklaunch ?? {};
 
   const searchField = useRef();
 
@@ -145,7 +151,6 @@ export default function QuickLaunch({ servicesAndBookmarks, searchString, setSea
   function handleSearchChange(event) {
     const rawSearchString = event.target.value;
     setCurrentItemIndex(null);
-    // urls keep their casing, everything else is lowercased for matching
     setSearchString(parseUrl(rawSearchString) ? rawSearchString : rawSearchString.toLowerCase());
   }
 
@@ -180,7 +185,6 @@ export default function QuickLaunch({ servicesAndBookmarks, searchString, setSea
 
   function handleItemClick(event) {
     closeAndReset();
-    // in case hover doesnt fire, use the clicked item, not the highlighted one
     openCurrentItem(event.metaKey, parseInt(event.currentTarget.dataset.index, 10));
   }
 
@@ -228,6 +232,7 @@ export default function QuickLaunch({ servicesAndBookmarks, searchString, setSea
   }, [searchProvider, searchString, searchSuggestions]);
 
   const results = getSearchResults({
+    allowUrlSuggestions,
     hideVisitURL,
     searchDescriptions,
     searchProvider,
@@ -240,6 +245,7 @@ export default function QuickLaunch({ servicesAndBookmarks, searchString, setSea
 
   const activeItemIndex = currentItemIndex ?? (results.length ? 0 : null);
 
+  const [hidden, setHidden] = useState(true);
   useEffect(() => {
     function handleBackdropClick(event) {
       if (event.target?.tagName === "DIV") closeAndReset();
@@ -248,11 +254,14 @@ export default function QuickLaunch({ servicesAndBookmarks, searchString, setSea
     if (isOpen) {
       searchField.current.focus();
       document.body.addEventListener("click", handleBackdropClick);
+      setHidden(false);
     } else {
+      document.body.removeEventListener("click", handleBackdropClick);
       searchField.current.blur();
+      setTimeout(() => {
+        setHidden(true);
+      }, 300); // disable on close
     }
-
-    return () => document.body.removeEventListener("click", handleBackdropClick);
   }, [isOpen, closeAndReset]);
 
   function highlightText(text) {
@@ -261,6 +270,7 @@ export default function QuickLaunch({ servicesAndBookmarks, searchString, setSea
       <span>
         {parts.map((part, i) =>
           part.toLowerCase() === searchString.toLowerCase() ? (
+            // eslint-disable-next-line react/no-array-index-key
             <span key={`${searchString}_${i}`} className="bg-theme-300/10">
               {part}
             </span>
@@ -276,17 +286,13 @@ export default function QuickLaunch({ servicesAndBookmarks, searchString, setSea
     <>
       <div
         className={classNames(
-          "relative z-40 ease-in-out",
-          isOpen ? "visible opacity-100" : "invisible opacity-0 pointer-events-none",
+          "relative z-40 ease-in-out duration-300 transition-opacity",
+          hidden && !isOpen && "hidden",
+          !hidden && isOpen && "opacity-100",
+          !isOpen && "opacity-0",
         )}
-        style={{
-          transitionProperty: "opacity, visibility",
-          transitionDuration: "300ms, 0s",
-          transitionDelay: isOpen ? "0s, 0s" : "0s, 300ms",
-        }}
         role="dialog"
         aria-modal="true"
-        aria-hidden={!isOpen}
       >
         <div className="fixed inset-0 bg-gray-500 opacity-50" />
         <div className="fixed inset-0 z-20 overflow-y-auto">
@@ -318,7 +324,7 @@ export default function QuickLaunch({ servicesAndBookmarks, searchString, setSea
                         onKeyDown={handleItemKeyDown}
                         className={classNames(
                           "flex flex-row w-full items-center justify-between rounded-md text-sm md:text-xl py-2 px-4 cursor-pointer text-theme-700 dark:text-theme-200",
-                          i === activeItemIndex && "bg-theme-300/50 dark:bg-theme-700/50",
+                          i === currentItemIndex && "bg-theme-300/50 dark:bg-theme-700/50",
                         )}
                       >
                         <div className="flex flex-row items-center mr-4 pointer-events-none">
